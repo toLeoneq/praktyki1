@@ -1,0 +1,84 @@
+@page "/products"
+@rendermode InteractiveServer
+@using BlazorApp.Model
+@inject ProductApiService Api
+
+<h3>Produkty</h3>
+
+<p class="text-danger" hidden="@(error == null)">@error</p>
+
+<EditForm Model="newProduct" OnValidSubmit="AddAsync">
+    <InputText @bind-Value="newProduct.Name" placeholder="Nazwa" />
+    <InputNumber @bind-Value="newProduct.Price" placeholder="Cena" />
+    <InputText @bind-Value="newProduct.Category" placeholder="Kategoria" />
+    <button type="submit">Dodaj</button>
+</EditForm>
+
+<table class="table">
+    <thead>
+        <tr><th>Id</th><th>Nazwa</th><th>Cena</th><th>Kategoria</th><th></th></tr>
+    </thead>
+    <tbody>
+        @foreach (var p in products)
+        {
+            <tr>
+                <td>@p.Id</td>
+                <td>@p.Name</td>
+                <td>@p.Price zł</td>
+                <td>@p.Category</td>
+                <td><button @onclick="() => DeleteAsync(p.Id)">Usuń</button></td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<Product> products = new();
+    private Product newProduct = new();
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            products = await Api.GetProductsAsync();
+            error = null;
+        }
+        catch (Exception ex)
+        {
+            error = "Nie udało się pobrać produktów z API: " + ex.Message;
+        }
+    }
+
+    private async Task AddAsync()
+    {
+        try
+        {
+            await Api.AddProductAsync(newProduct);
+            newProduct = new();
+            await LoadAsync();
+        }
+        catch
+        {
+            error = "Nie udało się dodać produktu.";
+        }
+    }
+
+    private async Task DeleteAsync(int id)
+    {
+        try
+        {
+            await Api.DeleteProductAsync(id);
+            await LoadAsync();
+        }
+        catch
+        {
+            error = "Nie udało się usunąć produktu.";
+        }
+    }
+}
